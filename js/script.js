@@ -1,10 +1,16 @@
 const canvas = document.querySelector("canvas")
 const ctx = canvas.getContext("2d")
+let maxScore = 0;
+
 
 const score = document.querySelector(".score--value")
 const finalScore = document.querySelector(".final-score > span")
 const menu = document.querySelector(".menu-screen")
 const buttonPlay = document.querySelector(".btn-play")
+const speed = document.querySelector(".speed")
+const maxScoreElement = document.querySelector(".maxScore")
+let interval = 300
+let disabledGame = false;
 
 const audio = new Audio("../assets/audio.mp3")
 
@@ -14,8 +20,27 @@ const initialPosition = { x: 270, y: 240 }
 
 let snake = [initialPosition]
 
+const setMaxScore = (num) => {
+    if (maxScore < num) {
+        maxScore = num;
+        localStorage.setItem('maxScore', `${num}`)
+        maxScoreElement.innerText = maxScore
+    }
+}
+
+if(!localStorage.getItem('maxScore')) {
+    setMaxScore(0)
+} else {
+    maxScore = +localStorage.getItem('maxScore');
+    maxScoreElement.innerText = maxScore;
+}
+
 const incrementScore = () => {
+    console.log(score.innerText)
     score.innerText = +score.innerText + 10
+    console.log(score.innerText)
+    setMaxScore(+score.innerText)
+    speed.innerText = 305 - interval;
 }
 
 const randomNumber = (min, max) => {
@@ -66,7 +91,7 @@ const drawSnake = () => {
 }
 
 const moveSnake = () => {
-    if (!direction) return
+    if (!direction || disabledGame) return
 
     const head = snake[snake.length - 1]
 
@@ -125,6 +150,10 @@ const chackEat = () => {
         food.x = x
         food.y = y
         food.color = randomColor()
+
+        if (interval > 55) {
+            interval -= 5;
+        }
     }
 }
 
@@ -147,6 +176,7 @@ const checkCollision = () => {
 
 const gameOver = () => {
     direction = undefined
+    disabledGame = true
 
     menu.style.display = "flex"
     finalScore.innerText = score.innerText
@@ -166,31 +196,39 @@ const gameLoop = () => {
 
     loopId = setTimeout(() => {
         gameLoop()
-    }, 300)
+    }, interval)
 }
 
 gameLoop()
 
 document.addEventListener("keydown", ({ key }) => {
-    if (key == "ArrowRight" && direction != "left") {
+    const head = snake[snake.length - 1];
+    const neck = snake[snake.length - 3] || false;
+
+    const xAprove = head.y !== neck.y || !neck;
+    const yAprove = head.x !== neck.x || !neck;
+
+    if (key == "ArrowRight" && xAprove && direction !== 'left') {
         direction = "right"
     }
 
-    if (key == "ArrowLeft" && direction != "right") {
+    if (key == "ArrowLeft" && xAprove && direction !== 'right') {
         direction = "left"
     }
 
-    if (key == "ArrowDown" && direction != "up") {
+    if (key == "ArrowDown" && yAprove && direction !== 'up') {
         direction = "down"
     }
 
-    if (key == "ArrowUp" && direction != "down") {
+    if (key == "ArrowUp" && yAprove && direction !== 'down') {
         direction = "up"
     }
 })
 
 buttonPlay.addEventListener("click", () => {
+    disabledGame = false
     score.innerText = "00"
+    interval = 300
     menu.style.display = "none"
     canvas.style.filter = "none"
 
